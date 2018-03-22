@@ -11,6 +11,7 @@ import threading
 import time
 import socket
 import json
+import psutil
 
 from msg import Msg,Urgency
 
@@ -27,6 +28,15 @@ single_notification_app=[ "VLC media player" ]
     A list of applications that are allowed to expire.
 """
 allowed_expire_app=[ ]
+rtmin_sig = 1
+sig_proc = ["^i3blocks", "python3.*rofication-gui.py$"]
+
+
+def send_signals():
+    pat = "|".join(sig_proc)
+    cmd = "\'pgrep -f \"" + pat + "\" | xargs kill -RTMIN+" + str(rtmin_sig) + "\'"
+    p = subprocess.Popen(["sh", "-c", cmd])
+    p.comminicate()
 
 
 class Rofication(threading.Thread):
@@ -146,8 +156,10 @@ class Rofication(threading.Thread):
                     # Dismiss and item.
                     elif command == "del":
                         self.communication_command_delete(connection,data.split(':')[1])
+                        send_signals()
                     elif command == "dela":
                         self.communication_command_delete_apps(connection,data.split(':')[1])
+                        send_signals()
                     # Saw an item, this sets the urgency to normal.
                     elif command == "saw":
                         self.communication_command_saw(connection, data.split(':')[1])
@@ -185,6 +197,7 @@ class NotificationFetcher(dbus.service.Object):
         if 'urgency' in hints:
             msg.urgency  = int(hints['urgency'])
         self._rofication.add_notification( msg )
+        send_signals()
         return notification_id
 
     @dbus.service.method("org.freedesktop.Notifications", in_signature='', out_signature='as')
@@ -194,11 +207,13 @@ class NotificationFetcher(dbus.service.Object):
     @dbus.service.signal('org.freedesktop.Notifications', signature='uu')
     def NotificationClosed(self, id_in, reason_in):
         _rofication.remove_notification(id_in)
+        send_signals()
         pass
 
     @dbus.service.method("org.freedesktop.Notifications", in_signature='u', out_signature='')
     def CloseNotification(self, id):
         _rofication.remove_notification(id)
+        send_signals()
         pass
 
     @dbus.service.method("org.freedesktop.Notifications", in_signature='', out_signature='ssss')

@@ -8,6 +8,8 @@ import jsonpickle
 from gi.repository import GLib
 from enum import Enum
 from msg import Msg,Urgency
+import signal
+import os
 
 def linesplit(socket):
     buffer = socket.recv(16)
@@ -30,6 +32,20 @@ def linesplit(socket):
 msg = """<span font-size='small'><i>Alt+s</i>:    Dismiss notification.    <i>Alt+Enter</i>:      Mark notification seen.\n"""
 msg += """<i>Alt+r</i>:    Reload                   <i>Alt+a</i>:          Delete application notification</span>""";
 rofi_command = [ 'rofi' , '-dmenu', '-p', 'Notifications:', '-markup', '-mesg', msg]
+
+reload_sig = 1
+
+
+class Noti(Exception):
+    pass
+
+
+def noti_handler(signum, frame):
+    raise Noti
+
+
+signal.signal(signal.SIGRTMIN + reload_sig, noti_handler)
+
 
 def strip_tags(value):
   "Return the given HTML with all tags stripped."
@@ -55,12 +71,20 @@ def call_rofi(entries, additional_args=[]):
         additional_args.extend(['-selected-row', str(len(entries) - 1)])
 
     proc = subprocess.Popen(rofi_command+ additional_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
-    for e in entries:
-        proc.stdin.write((e).encode('utf-8'))
-        proc.stdin.write(struct.pack('B', 0))
-    proc.stdin.close()
-    answer = proc.stdout.read().decode("utf-8")
-    exit_code = proc.wait()
+
+    answer = ''
+    exit_code = 1337
+
+    try:
+        for e in entries:
+            proc.stdin.write((e).encode('utf-8'))
+            proc.stdin.write(struct.pack('B', 0))
+        proc.stdin.close()
+        answer = proc.stdout.read().decode("utf-8")
+        exit_code = proc.wait()
+    except Noti:
+        proc.kill()
+
     # trim whitespace
     if answer == '':
         return None,exit_code
@@ -113,13 +137,13 @@ while cont:
     # Select previous selected row.
     if did != None:
         args.append("-selected-row")
-        args.append(str(did))
+        args.append(str(did - 1))
     # Show rofi
     did,code = call_rofi(entries,args)
     print("{a},{b}".format(a=did,b=code))
     # Dismiss notification
     if did != None and code == 10:
-        send_command("del:{mid}".format(mid=ids[did].mid))<Down>
+        send_command("del:{mid}".format(mid=ids[did].mid))
         cont=True
     # Seen notification
     elif did != None and code == 11:
@@ -130,3 +154,5 @@ while cont:
     elif did != None and code == 13:
         send_command("dela:{app}".format(app=ids[did].application))
         cont=True
+    elif did is None and code == 1337:
+        cont = True
