@@ -31,7 +31,7 @@ def linesplit(socket):
 
 msg = """<span font-size='small'><i>Alt+s</i>:    Dismiss notification.    <i>Alt+Enter</i>:      Mark notification seen.\n"""
 msg += """<i>Alt+r</i>:    Reload                   <i>Alt+a</i>:          Delete application notification</span>""";
-rofi_command = [ 'rofi' , '-dmenu', '-p', 'Notifications:', '-markup', '-mesg', msg]
+rofi_command = [ 'rofi' , '-dmenu', '-p', 'Notifications', '-markup', '-mesg', msg]
 
 reload_sig = 1
 
@@ -61,7 +61,7 @@ def call_rofi(entries, additional_args=[]):
                              '-sep', '\\0',
                              '-format', 'i',
                              '-scroll-method', '1',
-                             '-no-cycle'
+                             '-no-cycle',
                              '-l', str(rows),
                              '-eh', '2',
                              '-location', '2',
@@ -84,6 +84,7 @@ def call_rofi(entries, additional_args=[]):
         exit_code = proc.wait()
     except Noti:
         proc.kill()
+        return None, exit_code
 
     # trim whitespace
     if answer == '':
