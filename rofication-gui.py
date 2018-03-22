@@ -36,6 +36,7 @@ def strip_tags(value):
   return re.sub(r'<[^>]*?>', '', value)
 
 def call_rofi(entries, additional_args=[]):
+    rows = min(4, len(entries))
     additional_args.extend([ '-kb-custom-1', 'Alt+s',
                              '-kb-custom-2', 'Alt+Return',
                              '-kb-custom-3', 'Alt+r',
@@ -43,10 +44,16 @@ def call_rofi(entries, additional_args=[]):
                              '-markup-rows',
                              '-sep', '\\0',
                              '-format', 'i',
-                             '-columns', '3',
-                             '-lines', '4',
+                             '-scroll-method', '1',
+                             '-no-cycle'
+                             '-l', str(rows),
                              '-eh', '2',
-                             '-width', '-70' ])
+                             '-location', '2',
+                             '-width', '-100' ])
+
+    if '-selected-row' not in additional_args:
+        additional_args.extend(['-selected-row', str(len(entries) - 1)])
+
     proc = subprocess.Popen(rofi_command+ additional_args, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
     for e in entries:
         proc.stdin.write((e).encode('utf-8'))
@@ -112,7 +119,7 @@ while cont:
     print("{a},{b}".format(a=did,b=code))
     # Dismiss notification
     if did != None and code == 10:
-        send_command("del:{mid}".format(mid=ids[did].mid))
+        send_command("del:{mid}".format(mid=ids[did].mid))<Down>
         cont=True
     # Seen notification
     elif did != None and code == 11:
