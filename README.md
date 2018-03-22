@@ -60,6 +60,13 @@ easily integrated into existing tools.  Currently we ship a small script to inte
 notifications. Ideally there should be several small scripts that implements this for different
 desktop environments.
 
+[rofication]
+label=N
+markup=pango
+interval=once
+signal=1
+command=[..]/rofication-statusi3blocks.py
+
 ## GUI
 
 The **Rofication** gui consists of a small python script wrapping **Rofi**. The GUI allows the user
